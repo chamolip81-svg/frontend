@@ -85,7 +85,7 @@ const Home = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="flex md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {recentlyPlayed.slice(0, 10).map((song) => (
                 <SongCard key={song.id} song={song} />
               ))}
