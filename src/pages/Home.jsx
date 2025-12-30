@@ -49,7 +49,8 @@ const Home = () => {
   const hasRecentlyPlayed = recentlyPlayed.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 pb-32">
+    /* 🔧 MOBILE FIX: reduced side padding on small screens */
+    <div className="min-h-screen bg-gray-900 text-white px-4 md:px-6 pb-32">
       <div className="max-w-7xl mx-auto">
 
         {/* ================= HEADER ================= */}
@@ -85,7 +86,15 @@ const Home = () => {
               </p>
             </div>
           ) : (
-            <div className="flex md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            /* 🔧 MOBILE FIX: horizontal swipe on mobile, grid on desktop */
+            <div
+              className="
+                flex gap-4 overflow-x-auto pb-2
+                md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5
+                md:gap-6 md:overflow-visible
+                scrollbar-hide
+              "
+            >
               {recentlyPlayed.slice(0, 10).map((song) => (
                 <SongCard key={song.id} song={song} />
               ))}
