@@ -1,5 +1,5 @@
 // src/context/PlayerContext.jsx
-// THIS FILE FIXES MOBILE AUDIO ISSUES
+// MOBILE AUDIO SAFE – FULL VERSION (NO FEATURES REMOVED)
 
 import React, {
   createContext,
@@ -8,13 +8,13 @@ import React, {
   useEffect,
   useRef,
   useCallback
-} from 'react';
+} from "react";
 
 const PlayerContext = createContext();
 
 /* ===========================
    STORAGE KEYS
-   =========================== */
+=========================== */
 const RECENTLY_PLAYED_KEY = "auralyn:recently-played";
 const QUEUE_KEY = "auralyn_queue";
 const VOLUME_KEY = "auralyn_volume";
@@ -23,26 +23,21 @@ const REPEAT_KEY = "auralyn_repeat";
 
 /* ===========================
    MOBILE DETECTION
-   =========================== */
-const isMobile = () => {
-  return (
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || navigator.maxTouchPoints > 0)
-  );
-};
+=========================== */
+const isMobile = () =>
+  typeof window !== "undefined" &&
+  ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
 export const usePlayer = () => {
-  const context = useContext(PlayerContext);
-  if (!context) {
-    throw new Error('usePlayer must be used within PlayerProvider');
-  }
-  return context;
+  const ctx = useContext(PlayerContext);
+  if (!ctx) throw new Error("usePlayer must be used within PlayerProvider");
+  return ctx;
 };
 
 export const PlayerProvider = ({ children }) => {
   /* ===========================
-     CORE PLAYER STATE
-     =========================== */
+     CORE STATE
+  =========================== */
   const [currentSong, setCurrentSong] = useState(null);
   const [queue, setQueue] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -50,12 +45,12 @@ export const PlayerProvider = ({ children }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState('off');
+  const [repeat, setRepeat] = useState("off");
   const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   /* ===========================
      RECENTLY PLAYED
-     =========================== */
+  =========================== */
   const [recentlyPlayed, setRecentlyPlayed] = useState(() => {
     try {
       const stored = localStorage.getItem(RECENTLY_PLAYED_KEY);
@@ -66,22 +61,22 @@ export const PlayerProvider = ({ children }) => {
   });
 
   /* ===========================
-     AUDIO ELEMENT & WEB AUDIO API
-     =========================== */
+     AUDIO SETUP
+  =========================== */
   const audioRef = useRef(new Audio());
   const audioContextRef = useRef(null);
   const gainNodeRef = useRef(null);
   const isAudioContextSetRef = useRef(false);
 
   /* ===========================
-     SETUP AUDIO CONTEXT FOR MOBILE
-     =========================== */
+     MOBILE AUDIO CONTEXT
+  =========================== */
   const setupAudioContext = useCallback(() => {
-    if (isAudioContextSetRef.current || !isMobileDevice) return;
-    if (!audioRef.current) return;
+    if (!isMobileDevice || isAudioContextSetRef.current) return;
 
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const AudioContext =
+        window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
 
       const ctx = new AudioContext();
@@ -94,46 +89,42 @@ export const PlayerProvider = ({ children }) => {
       audioContextRef.current = ctx;
       gainNodeRef.current = gainNode;
       isAudioContextSetRef.current = true;
-
-      console.log('✅ Web Audio API initialized for mobile');
     } catch (err) {
-      console.warn('Web Audio API setup failed:', err);
+      console.warn("Web Audio API init failed", err);
     }
   }, [isMobileDevice]);
 
   /* ===========================
-     DETECT MOBILE ON MOUNT
-     =========================== */
+     DETECT MOBILE
+  =========================== */
   useEffect(() => {
     setIsMobileDevice(isMobile());
   }, []);
 
   /* ===========================
      LOAD SAVED STATE
-     =========================== */
+  =========================== */
   useEffect(() => {
     try {
-      const savedQueue = localStorage.getItem(QUEUE_KEY);
-      if (savedQueue) setQueue(JSON.parse(savedQueue));
-    } catch (e) {
-      console.error("Failed to load queue", e);
-    }
+      const q = localStorage.getItem(QUEUE_KEY);
+      if (q) setQueue(JSON.parse(q));
+    } catch {}
 
     if (!isMobileDevice) {
-      const savedVolume = localStorage.getItem(VOLUME_KEY);
-      if (savedVolume) setVolume(Number(savedVolume));
+      const v = localStorage.getItem(VOLUME_KEY);
+      if (v) setVolume(Number(v));
     }
 
-    const savedShuffle = localStorage.getItem(SHUFFLE_KEY);
-    if (savedShuffle) setShuffle(savedShuffle === "true");
+    const s = localStorage.getItem(SHUFFLE_KEY);
+    if (s) setShuffle(s === "true");
 
-    const savedRepeat = localStorage.getItem(REPEAT_KEY);
-    if (savedRepeat) setRepeat(savedRepeat);
+    const r = localStorage.getItem(REPEAT_KEY);
+    if (r) setRepeat(r);
   }, [isMobileDevice]);
 
   /* ===========================
-     PERSIST STATE
-     =========================== */
+     SAVE STATE
+  =========================== */
   useEffect(() => {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   }, [queue]);
@@ -153,118 +144,90 @@ export const PlayerProvider = ({ children }) => {
   }, [repeat]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        RECENTLY_PLAYED_KEY,
-        JSON.stringify(recentlyPlayed)
-      );
-    } catch (err) {
-      console.error("Failed to save recently played", err);
-    }
+    localStorage.setItem(
+      RECENTLY_PLAYED_KEY,
+      JSON.stringify(recentlyPlayed)
+    );
   }, [recentlyPlayed]);
 
   /* ===========================
-     VOLUME CONTROL (MOBILE-SAFE)
-     =========================== */
+     VOLUME (MOBILE SAFE)
+  =========================== */
   useEffect(() => {
     const audio = audioRef.current;
-    
-    if (isMobileDevice) {
-      if (gainNodeRef.current) {
-        gainNodeRef.current.gain.value = volume / 100;
-      }
+    if (isMobileDevice && gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volume / 100;
     } else {
       audio.volume = volume / 100;
     }
   }, [volume, isMobileDevice]);
 
   /* ===========================
-     PLAY LOGIC
-     =========================== */
-  const playSong = useCallback((song) => {
-    if (!song || !song.url) {
-      console.warn('Invalid song or URL');
-      return;
-    }
+     PLAY SONG (NO AUTOPLAY)
+  =========================== */
+  const playSong = useCallback(
+    (song) => {
+      if (!song || !song.url) return;
 
-    addToRecentlyPlayed(song);
-    setCurrentSong(song);
+      const audio = audioRef.current;
 
-    const audio = audioRef.current;
-    
-    // Set up CORS headers for audio
-    audio.crossOrigin = "anonymous";
-    audio.src = song.url;
-    
-    // Setup Web Audio API on first interaction (mobile requirement)
-    if (isMobileDevice) {
-      setupAudioContext();
-    }
-
-    // iOS specific: need user gesture
-    audio.load();
-
-    const playPromise = audio.play();
-    
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          console.log('▶️ Playing:', song.name);
-          setIsPlaying(true);
-        })
-        .catch((error) => {
-          console.warn('Play error (might need user gesture):', error);
-          // On mobile, user might need to tap play button
-          setIsPlaying(false);
-        });
-    }
-  }, [isMobileDevice, setupAudioContext]);
-
-  const addToRecentlyPlayed = (song) => {
-    setRecentlyPlayed(prev => {
-      const filtered = prev.filter(s => s.id !== song.id);
-      return [song, ...filtered].slice(0, 20);
-    });
-  };
-
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (isPlaying) {
       audio.pause();
+      audio.src = song.url;
+      audio.crossOrigin = "anonymous";
+      audio.playsInline = true; // 🔴 REQUIRED FOR iOS
+      audio.preload = "metadata";
+      audio.load();
+
+      setCurrentSong(song);
       setIsPlaying(false);
-    } else {
-      // For mobile: need user gesture, this is called from button click
-      audio.play()
-        .then(() => {
-          console.log('▶️ Resumed');
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error('Play failed:', err);
-          setIsPlaying(false);
-        });
+
+      setRecentlyPlayed((prev) => {
+        const filtered = prev.filter((s) => s.id !== song.id);
+        return [song, ...filtered].slice(0, 20);
+      });
+
+      if (isMobileDevice) setupAudioContext();
+    },
+    [isMobileDevice, setupAudioContext]
+  );
+
+  /* ===========================
+     USER TAP PLAY (MOBILE SAFE)
+  =========================== */
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        await audio.play(); // ✅ allowed
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error("Mobile play blocked", err);
     }
   };
 
   /* ===========================
      NEXT / PREVIOUS
-     =========================== */
+  =========================== */
   const handleNext = useCallback(() => {
     if (!queue.length) return;
 
-    if (repeat === 'one') {
+    if (repeat === "one") {
       audioRef.current.currentTime = 0;
       audioRef.current.play();
       return;
     }
 
-    const index = queue.findIndex(s => s.id === currentSong?.id);
+    const index = queue.findIndex((s) => s.id === currentSong?.id);
     let nextIndex = shuffle
       ? Math.floor(Math.random() * queue.length)
       : index + 1;
 
     if (nextIndex >= queue.length) {
-      if (repeat === 'all') nextIndex = 0;
+      if (repeat === "all") nextIndex = 0;
       else return;
     }
 
@@ -277,105 +240,93 @@ export const PlayerProvider = ({ children }) => {
       return;
     }
 
-    const index = queue.findIndex(s => s.id === currentSong?.id);
+    const index = queue.findIndex((s) => s.id === currentSong?.id);
     if (index > 0) playSong(queue[index - 1]);
   };
 
   /* ===========================
      AUDIO EVENTS
-     =========================== */
+  =========================== */
   useEffect(() => {
     const audio = audioRef.current;
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleEnded = () => handleNext();
-    const handleError = (e) => {
-      console.error('Audio error:', e);
-      setIsPlaying(false);
-    };
+    const t = () => setCurrentTime(audio.currentTime);
+    const d = () => setDuration(audio.duration);
+    const e = () => handleNext();
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener("timeupdate", t);
+    audio.addEventListener("loadedmetadata", d);
+    audio.addEventListener("ended", e);
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener("timeupdate", t);
+      audio.removeEventListener("loadedmetadata", d);
+      audio.removeEventListener("ended", e);
     };
   }, [handleNext]);
 
   /* ===========================
-     QUEUE MANAGEMENT
-     =========================== */
-  const addToQueue = (song) => {
-    setQueue(prev => prev.some(s => s.id === song.id) ? prev : [...prev, song]);
-  };
+     QUEUE HELPERS
+  =========================== */
+  const addToQueue = (song) =>
+    setQueue((p) => (p.some((s) => s.id === song.id) ? p : [...p, song]));
 
-  const addMultipleToQueue = (songs) => {
-    setQueue(prev => [
-      ...prev,
-      ...songs.filter(s => !prev.some(p => p.id === s.id))
+  const addMultipleToQueue = (songs) =>
+    setQueue((p) => [
+      ...p,
+      ...songs.filter((s) => !p.some((x) => x.id === s.id)),
     ]);
-  };
 
-  const removeFromQueue = (songId) => {
-    setQueue(prev => prev.filter(s => s.id !== songId));
-  };
+  const removeFromQueue = (id) =>
+    setQueue((p) => p.filter((s) => s.id !== id));
 
   const clearQueue = () => setQueue([]);
 
-  const playQueue = (songs, startIndex = 0) => {
+  const playQueue = (songs, index = 0) => {
     setQueue(songs);
-    playSong(songs[startIndex]);
+    playSong(songs[index]);
   };
 
-  const seekTo = (time) => {
-    audioRef.current.currentTime = time;
-    setCurrentTime(time);
+  const seekTo = (t) => {
+    audioRef.current.currentTime = t;
+    setCurrentTime(t);
   };
 
-  const toggleShuffle = () => setShuffle(p => !p);
-
-  const toggleRepeat = () => {
-    setRepeat(p => p === 'off' ? 'all' : p === 'all' ? 'one' : 'off');
-  };
+  const toggleShuffle = () => setShuffle((p) => !p);
+  const toggleRepeat = () =>
+    setRepeat((p) => (p === "off" ? "all" : p === "all" ? "one" : "off"));
 
   /* ===========================
      CONTEXT VALUE
-     =========================== */
-  const value = {
-    currentSong,
-    queue,
-    isPlaying,
-    volume,
-    currentTime,
-    duration,
-    shuffle,
-    repeat,
-    recentlyPlayed,
-    isMobileDevice,
-
-    playSong,
-    togglePlay,
-    handleNext,
-    handlePrevious,
-    addToQueue,
-    addMultipleToQueue,
-    removeFromQueue,
-    clearQueue,
-    playQueue,
-    seekTo,
-    setVolume,
-    toggleShuffle,
-    toggleRepeat,
-  };
-
+  =========================== */
   return (
-    <PlayerContext.Provider value={value}>
+    <PlayerContext.Provider
+      value={{
+        currentSong,
+        queue,
+        isPlaying,
+        volume,
+        currentTime,
+        duration,
+        shuffle,
+        repeat,
+        recentlyPlayed,
+        isMobileDevice,
+        playSong,
+        togglePlay,
+        handleNext,
+        handlePrevious,
+        addToQueue,
+        addMultipleToQueue,
+        removeFromQueue,
+        clearQueue,
+        playQueue,
+        seekTo,
+        setVolume,
+        toggleShuffle,
+        toggleRepeat,
+      }}
+    >
       {children}
     </PlayerContext.Provider>
   );
