@@ -1,4 +1,3 @@
-// src/context/PlayerContext.jsx
 // MOBILE AUDIO SAFE – FULL VERSION (NO FEATURES REMOVED)
 
 import React, {
@@ -151,16 +150,19 @@ export const PlayerProvider = ({ children }) => {
   }, [recentlyPlayed]);
 
   /* ===========================
-     VOLUME (MOBILE SAFE)
+     VOLUME (ANDROID SAFE FIX)
   =========================== */
   useEffect(() => {
     const audio = audioRef.current;
-    if (isMobileDevice && gainNodeRef.current) {
+
+    // 🔴 IMPORTANT: On Android, keep audio element volume authoritative
+    audio.muted = false;
+    audio.volume = volume / 100;
+
+    if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = volume / 100;
-    } else {
-      audio.volume = volume / 100;
     }
-  }, [volume, isMobileDevice]);
+  }, [volume]);
 
   /* ===========================
      PLAY SONG (NO AUTOPLAY)
@@ -192,17 +194,14 @@ export const PlayerProvider = ({ children }) => {
   );
 
   /* ===========================
-     USER TAP PLAY (FIXED – DO NOT TOUCH)
+     USER TAP PLAY (FINAL FIX)
   =========================== */
   const togglePlay = async () => {
     const audio = audioRef.current;
 
     try {
-      // 🔴 ONLY FIX: resume AudioContext on user gesture (mobile sound unblock)
-      if (
-        audioContextRef.current &&
-        audioContextRef.current.state === "suspended"
-      ) {
+      // 🔴 ANDROID FIX: resume AudioContext on user gesture
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
         await audioContextRef.current.resume();
       }
 
@@ -217,7 +216,7 @@ export const PlayerProvider = ({ children }) => {
         setIsPlaying(true);
       }
     } catch (err) {
-      console.error("Mobile play blocked:", err);
+      console.error("Mobile audio blocked:", err);
     }
   };
 
