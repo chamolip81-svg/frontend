@@ -1,3 +1,6 @@
+// src/context/PlayerContext.jsx
+// THIS FILE FIXES MOBILE AUDIO ISSUES
+
 import React, {
   createContext,
   useContext,
@@ -10,7 +13,7 @@ import React, {
 const PlayerContext = createContext();
 
 /* ===========================
-   STORAGE KEYS (SINGLE SOURCE)
+   STORAGE KEYS
    =========================== */
 const RECENTLY_PLAYED_KEY = "auralyn:recently-played";
 const QUEUE_KEY = "auralyn_queue";
@@ -19,7 +22,7 @@ const SHUFFLE_KEY = "auralyn_shuffle";
 const REPEAT_KEY = "auralyn_repeat";
 
 /* ===========================
-   MOBILE DETECTION (CAPABILITY-BASED)
+   MOBILE DETECTION
    =========================== */
 const isMobile = () => {
   return (
@@ -51,7 +54,7 @@ export const PlayerProvider = ({ children }) => {
   const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   /* ===========================
-     RECENTLY PLAYED (PERSISTENT)
+     RECENTLY PLAYED
      =========================== */
   const [recentlyPlayed, setRecentlyPlayed] = useState(() => {
     try {
@@ -63,15 +66,15 @@ export const PlayerProvider = ({ children }) => {
   });
 
   /* ===========================
-     AUDIO ELEMENT + WEB AUDIO API (FOR MOBILE GAIN)
+     AUDIO ELEMENT & WEB AUDIO API
      =========================== */
   const audioRef = useRef(new Audio());
-  const audioCtxRef = useRef(null);
+  const audioContextRef = useRef(null);
   const gainNodeRef = useRef(null);
   const isAudioContextSetRef = useRef(false);
 
   /* ===========================
-     SETUP WEB AUDIO API FOR MOBILE (OPTIONAL GAIN)
+     SETUP AUDIO CONTEXT FOR MOBILE
      =========================== */
   const setupAudioContext = useCallback(() => {
     if (isAudioContextSetRef.current || !isMobileDevice) return;
@@ -88,7 +91,7 @@ export const PlayerProvider = ({ children }) => {
       source.connect(gainNode);
       gainNode.connect(ctx.destination);
 
-      audioCtxRef.current = ctx;
+      audioContextRef.current = ctx;
       gainNodeRef.current = gainNode;
       isAudioContextSetRef.current = true;
 
@@ -106,7 +109,7 @@ export const PlayerProvider = ({ children }) => {
   }, []);
 
   /* ===========================
-     LOAD SAVED STATE (ONCE, MOBILE-SAFE)
+     LOAD SAVED STATE
      =========================== */
   useEffect(() => {
     try {
@@ -116,8 +119,6 @@ export const PlayerProvider = ({ children }) => {
       console.error("Failed to load queue", e);
     }
 
-    // Only restore volume on DESKTOP
-    // Mobile: let OS control
     if (!isMobileDevice) {
       const savedVolume = localStorage.getItem(VOLUME_KEY);
       if (savedVolume) setVolume(Number(savedVolume));
@@ -137,7 +138,6 @@ export const PlayerProvider = ({ children }) => {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   }, [queue]);
 
-  // Only persist volume on desktop
   useEffect(() => {
     if (!isMobileDevice) {
       localStorage.setItem(VOLUME_KEY, volume);
@@ -165,53 +165,59 @@ export const PlayerProvider = ({ children }) => {
 
   /* ===========================
      VOLUME CONTROL (MOBILE-SAFE)
-     Desktop: Direct .volume control
-     Mobile: Web Audio API gain (if available)
      =========================== */
   useEffect(() => {
     const audio = audioRef.current;
     
     if (isMobileDevice) {
-      // Mobile: use Web Audio API gain if available
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = volume / 100;
-        console.log(`📱 Mobile gain set to ${volume}%`);
       }
-      // If Web Audio not available, let OS control (don't force .volume)
     } else {
-      // Desktop: direct volume control
       audio.volume = volume / 100;
-      console.log(`🖥️ Desktop volume set to ${volume}%`);
     }
   }, [volume, isMobileDevice]);
 
   /* ===========================
-     PLAY LOGIC (NO FORCED VOLUME ON MOBILE)
+     PLAY LOGIC
      =========================== */
   const playSong = useCallback((song) => {
-    if (!song || !song.url) return;
+    if (!song || !song.url) {
+      console.warn('Invalid song or URL');
+      return;
+    }
 
     addToRecentlyPlayed(song);
     setCurrentSong(song);
 
     const audio = audioRef.current;
+    
+    // Set up CORS headers for audio
+    audio.crossOrigin = "anonymous";
     audio.src = song.url;
-    audio.load();
-
+    
     // Setup Web Audio API on first interaction (mobile requirement)
     if (isMobileDevice) {
       setupAudioContext();
     }
 
-    audio.play()
-      .then(() => {
-        setIsPlaying(true);
-        console.log('▶️ Playing:', song.name);
-      })
-      .catch((err) => {
-        console.error('Play failed:', err);
-        setIsPlaying(false);
-      });
+    // iOS specific: need user gesture
+    audio.load();
+
+    const playPromise = audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('▶️ Playing:', song.name);
+          setIsPlaying(true);
+        })
+        .catch((error) => {
+          console.warn('Play error (might need user gesture):', error);
+          // On mobile, user might need to tap play button
+          setIsPlaying(false);
+        });
+    }
   }, [isMobileDevice, setupAudioContext]);
 
   const addToRecentlyPlayed = (song) => {
@@ -227,8 +233,12 @@ export const PlayerProvider = ({ children }) => {
       audio.pause();
       setIsPlaying(false);
     } else {
+      // For mobile: need user gesture, this is called from button click
       audio.play()
-        .then(() => setIsPlaying(true))
+        .then(() => {
+          console.log('▶️ Resumed');
+          setIsPlaying(true);
+        })
         .catch((err) => {
           console.error('Play failed:', err);
           setIsPlaying(false);
@@ -237,7 +247,7 @@ export const PlayerProvider = ({ children }) => {
   };
 
   /* ===========================
-     NEXT / PREVIOUS (STABILIZED)
+     NEXT / PREVIOUS
      =========================== */
   const handleNext = useCallback(() => {
     if (!queue.length) return;
@@ -272,7 +282,7 @@ export const PlayerProvider = ({ children }) => {
   };
 
   /* ===========================
-     AUDIO EVENTS (FIXED)
+     AUDIO EVENTS
      =========================== */
   useEffect(() => {
     const audio = audioRef.current;
