@@ -16,6 +16,7 @@ const Player = () => {
     shuffle,
     repeat,
     queue,
+    isMobileDevice,
     togglePlay,
     handleNext,
     handlePrevious,
@@ -54,7 +55,7 @@ const Player = () => {
   // Calculate progress percentage
   const progressPercent = (currentTime / duration) * 100 || 0;
 
-  // Fallback image if album art fails (image is already normalized from api.js)
+  // Fallback image if album art fails
   const imageSrc = imageError
     ? 'https://via.placeholder.com/80x80/1f2937/10b981?text=♪'
     : (currentSong.image || 'https://via.placeholder.com/80x80/1f2937/10b981?text=♪');
@@ -164,24 +165,34 @@ const Player = () => {
           {/* Volume & Queue - Right Side */}
           <div className="flex items-center gap-4 flex-1 justify-end">
             {/* Volume Control */}
-            <div className="flex items-center gap-2">
-              {volume === 0 ? (
-                <VolumeX className="w-5 h-5 text-gray-400" />
-              ) : (
-                <Volume2 className="w-5 h-5 text-gray-400" />
-              )}
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={handleVolumeChange}
-                className="w-24 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer"
-                style={{
-                  background: `linear-gradient(to right, #10b981 0%, #10b981 ${volume}%, #374151 ${volume}%, #374151 100%)`
-                }}
-              />
-            </div>
+            {!isMobileDevice && (
+              <div className="flex items-center gap-2">
+                {volume === 0 ? (
+                  <VolumeX className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-gray-400" />
+                )}
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  className="w-24 h-1 bg-gray-700 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #10b981 0%, #10b981 ${volume}%, #374151 ${volume}%, #374151 100%)`
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Mobile: Show volume indicator (read-only) */}
+            {isMobileDevice && (
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <Volume2 className="w-5 h-5" />
+                <span>System Volume</span>
+              </div>
+            )}
 
             {/* Queue Button */}
             <button
@@ -200,36 +211,38 @@ const Player = () => {
         </div>
       </div>
 
-      {/* Custom Styles for Range Input */}
-      <style>{`
-        input[type='range']::-webkit-slider-thumb {
-          appearance: none;
-          width: 12px;
-          height: 12px;
-          background: white;
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        input[type='range']::-moz-range-thumb {
-          width: 12px;
-          height: 12px;
-          background: white;
-          border-radius: 50%;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+      {/* Custom Styles for Range Input (Desktop Only) */}
+      {!isMobileDevice && (
+        <style>{`
+          input[type='range']::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          }
+          
+          input[type='range']::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          }
 
-        input[type='range']::-webkit-slider-thumb:hover {
-          transform: scale(1.2);
-        }
+          input[type='range']::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+          }
 
-        input[type='range']::-moz-range-thumb:hover {
-          transform: scale(1.2);
-        }
-      `}</style>
+          input[type='range']::-moz-range-thumb:hover {
+            transform: scale(1.2);
+          }
+        `}</style>
+      )}
     </div>
   );
 };
