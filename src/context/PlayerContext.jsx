@@ -174,7 +174,7 @@ export const PlayerProvider = ({ children }) => {
       audio.pause();
       audio.src = song.url;
       audio.crossOrigin = "anonymous";
-      audio.playsInline = true; // 🔴 REQUIRED FOR iOS
+      audio.playsInline = true;
       audio.preload = "metadata";
       audio.load();
 
@@ -192,20 +192,32 @@ export const PlayerProvider = ({ children }) => {
   );
 
   /* ===========================
-     USER TAP PLAY (MOBILE SAFE)
+     USER TAP PLAY (FIXED – DO NOT TOUCH)
   =========================== */
   const togglePlay = async () => {
     const audio = audioRef.current;
+
     try {
+      // 🔴 ONLY FIX: resume AudioContext on user gesture (mobile sound unblock)
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state === "suspended"
+      ) {
+        await audioContextRef.current.resume();
+      }
+
+      audio.muted = false;
+      audio.volume = volume / 100;
+
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
       } else {
-        await audio.play(); // ✅ allowed
+        await audio.play();
         setIsPlaying(true);
       }
     } catch (err) {
-      console.error("Mobile play blocked", err);
+      console.error("Mobile play blocked:", err);
     }
   };
 
