@@ -1,6 +1,7 @@
 // frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Pages
 import Home from './pages/Home';
@@ -18,6 +19,9 @@ import Navbar from './components/Navbar';
 function App() {
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* Vercel Speed Insights */}
+      <SpeedInsights />
+      
       {/* Navigation Bar */}
       <Navbar />
       
