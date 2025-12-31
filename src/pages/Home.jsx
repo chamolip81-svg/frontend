@@ -49,16 +49,16 @@ const Home = () => {
   const hasRecentlyPlayed = recentlyPlayed.length > 0;
 
   return (
-    /* 🔧 MOBILE FIX: reduced side padding on small screens */
+    /* 🔥 REAL MOBILE FIX: full width on mobile, constrained on desktop */
     <div className="min-h-screen bg-gray-900 text-white px-4 md:px-6 pb-32">
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto md:max-w-7xl">
 
         {/* ================= HEADER ================= */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-            {greeting} <Music className="w-10 h-10 text-green-500" />
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+            {greeting} <Music className="w-8 h-8 md:w-10 md:h-10 text-green-500" />
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-sm md:text-base">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -70,35 +70,49 @@ const Home = () => {
 
         {/* ================= RECENTLY PLAYED ================= */}
         <section className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Clock className="w-6 h-6 text-green-500" />
-            <h2 className="text-2xl font-bold">Recently Played</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
+            <h2 className="text-xl md:text-2xl font-bold">Recently Played</h2>
           </div>
 
           {!hasRecentlyPlayed ? (
-            <div className="bg-gray-800 rounded-lg p-10 text-center max-w-xl">
-              <Music className="w-14 h-14 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-gray-300">
+            <div className="bg-gray-800 rounded-lg p-8 text-center max-w-md">
+              <Music className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+              <h3 className="text-base font-semibold mb-1 text-gray-300">
                 Nothing played yet
               </h3>
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-sm">
                 Play a song and it will appear here
               </p>
             </div>
           ) : (
-            /* 🔧 MOBILE FIX: horizontal swipe on mobile, grid on desktop */
-            <div
-              className="
-                flex gap-4 overflow-x-auto pb-2
-                md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5
-                md:gap-6 md:overflow-visible
-                scrollbar-hide
-              "
-            >
-              {recentlyPlayed.slice(0, 10).map((song) => (
-                <SongCard key={song.id} song={song} />
-              ))}
-            </div>
+            <>
+              {/* ✅ MOBILE: TRUE HORIZONTAL CAROUSEL */}
+              <div
+                className="
+                  flex gap-4 overflow-x-auto pb-4 md:hidden
+                  snap-x snap-mandatory
+                  -mx-4 px-4
+                "
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
+                {recentlyPlayed.slice(0, 10).map((song) => (
+                  <div
+                    key={song.id}
+                    className="min-w-[150px] snap-start"
+                  >
+                    <SongCard song={song} />
+                  </div>
+                ))}
+              </div>
+
+              {/* ✅ DESKTOP: GRID (UNCHANGED) */}
+              <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {recentlyPlayed.slice(0, 10).map((song) => (
+                  <SongCard key={song.id} song={song} />
+                ))}
+              </div>
+            </>
           )}
         </section>
 
@@ -138,44 +152,31 @@ const Home = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {/* Search Card */}
             <Link
               to="/search"
-              className="bg-gradient-to-br from-green-500 to-green-700 rounded-lg p-8 hover:scale-105 transition-transform block"
+              className="bg-gradient-to-br from-green-500 to-green-700 rounded-lg p-6 md:p-8 hover:scale-105 transition-transform block"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold">Search Music</h3>
-                <Music className="w-8 h-8" />
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl md:text-2xl font-bold">Search Music</h3>
+                <Music className="w-6 h-6 md:w-8 md:h-8" />
               </div>
-              <p className="text-green-100">
+              <p className="text-green-100 text-sm md:text-base">
                 Find your favorite songs, artists, and albums
               </p>
             </Link>
 
-            {/* Trending Disabled */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg p-8 opacity-50 cursor-not-allowed">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold">Trending</h3>
-                <TrendingUp className="w-8 h-8" />
-              </div>
-              <p className="text-purple-100">
-                Coming soon
-              </p>
-            </div>
-
-            {/* Playlists */}
             <Link to="/playlists">
               <div className="
                 bg-gradient-to-br from-blue-500 to-blue-700
-                rounded-lg p-8 cursor-pointer
+                rounded-lg p-6 md:p-8 cursor-pointer
                 transition-transform duration-200
                 hover:scale-[1.02] hover:brightness-110
               ">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold">Playlists</h3>
-                  <Music className="w-8 h-8" />
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl md:text-2xl font-bold">Playlists</h3>
+                  <Music className="w-6 h-6 md:w-8 md:h-8" />
                 </div>
-                <p className="text-blue-100">
+                <p className="text-blue-100 text-sm md:text-base">
                   Create and manage playlists
                 </p>
               </div>

@@ -1,15 +1,16 @@
 // frontend/src/components/SongCard.jsx
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Play, Plus, MoreVertical, Heart } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useFavorites } from "../context/FavoritesContext";
 import PlaylistModal from "./PlaylistModal";
 
-const SongCard = ({ song }) => {
+const SongCard = memo(({ song }) => {
   const { playSong, addToQueue, currentSong, isPlaying } = usePlayer();
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
 
@@ -49,16 +50,28 @@ const SongCard = ({ song }) => {
         ${isCurrentSong && isPlaying ? 'ring-2 ring-green-500' : ''}
       `}
     >
-      {/* Album Art */}
+      {/* Album Art with Lazy Loading */}
       <div className="relative aspect-square overflow-hidden bg-gray-900">
+        {/* Loading skeleton */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-700 animate-pulse"></div>
+        )}
+        
         <img
           src={imageSrc}
           alt={song.name}
+          loading="lazy"
+          decoding="async"
           onError={() => setImageError(true)}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          onLoad={() => setImageLoaded(true)}
+          className={`
+            w-full h-full object-cover transition-all duration-300
+            group-hover:scale-110
+            ${imageLoaded ? 'opacity-100' : 'opacity-0'}
+          `}
         />
 
-        {/* Favorite */}
+        {/* Favorite Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -102,7 +115,7 @@ const SongCard = ({ song }) => {
         <div className="flex gap-2 items-center">
           <button
             onClick={handlePlay}
-            className="flex-1 bg-green-500 text-white rounded-md py-2 sm:py-2.5 flex justify-center gap-2 text-sm sm:text-base"
+            className="flex-1 bg-green-500 text-white rounded-md py-2 sm:py-2.5 flex justify-center gap-2 text-sm sm:text-base hover:bg-green-600 transition"
           >
             <Play className="w-4 h-4 fill-current" />
             Play
@@ -111,7 +124,7 @@ const SongCard = ({ song }) => {
           <div className="flex gap-2">
             <button
               onClick={handleAddToQueue}
-              className="bg-gray-700 p-2 rounded"
+              className="bg-gray-700 p-2 rounded hover:bg-gray-600 transition"
               title="Add to queue"
             >
               <Plus className="w-5 h-5" />
@@ -122,7 +135,7 @@ const SongCard = ({ song }) => {
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="bg-gray-700 p-2 rounded"
+              className="bg-gray-700 p-2 rounded hover:bg-gray-600 transition"
             >
               <MoreVertical size={18} />
             </button>
@@ -138,7 +151,7 @@ const SongCard = ({ song }) => {
               setShowMenu(false);
               setShowPlaylistModal(true);
             }}
-            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-800"
+            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-800 transition"
           >
             ➕ Add to playlist
           </button>
@@ -153,6 +166,11 @@ const SongCard = ({ song }) => {
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Memoization: only re-render if song changed
+  return prevProps.song.id === nextProps.song.id;
+});
+
+SongCard.displayName = 'SongCard';
 
 export default SongCard;

@@ -8,8 +8,6 @@ import Search from './pages/Search';
 // import Favorites from './pages/Favorites'; // If you have this page
 import Favorites from "./pages/Favorites";
 import Playlists from "./pages/Playlists";
-import PlaylistDetails from "./pages/PlaylistDetails";
-
 
 // Components
 import Player from './components/Player';
@@ -28,7 +26,6 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/playlists" element={<Playlists />} />
-          <Route path="/playlists/:id" element={<PlaylistDetails />} />
           {/* Add more routes as needed */}
           {/* <Route path="/album/:id" element={<AlbumDetails />} /> */}
           {/* <Route path="/artist/:id" element={<ArtistDetails />} /> */}
