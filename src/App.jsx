@@ -1,6 +1,7 @@
 // frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 
 // Pages
 import Home from './pages/Home';
@@ -34,6 +35,9 @@ function App() {
       
       {/* Bottom Player - Always visible */}
       <Player />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
